@@ -1,0 +1,75 @@
+%     defbox	fx,6,0,'O_{f(x)}(x, a)'
+% 
+%     qubit 	q0,0
+%     qubit 	q1,0
+%     qubit 	q2,0
+%     qubit 	...,0
+%     qubit 	qn,0
+%     qubit 	a,0
+% 
+% 	h	q0
+% 	h   q1
+% 	h   q2
+% 	h   ...
+% 	h   qn
+% 	fx q0,q1,q2,...,qn,a
+
+%  Time 01:
+%    Gate 00 h(q0)
+%    Gate 01 h(q1)
+%    Gate 02 h(q2)
+%    Gate 03 h(...)
+%    Gate 04 h(qn)
+%  Time 02:
+%    Gate 05 fx(q0,q1,q2,...,qn,a)
+
+% Qubit circuit matrix:
+%
+% q0: gAxA, gBxA, n  
+% q1: gAxB, gBxB, n  
+% q2: gAxC, gBxC, n  
+% ...: gAxD, gBxD, n  
+% qn: gAxE, gBxE, n  
+% a: n  , gBxF, n  
+
+\documentclass[11pt]{article}
+\input{xyqcirc.tex}
+
+% definitions for the circuit elements
+
+\def\gAxA{\op{H}\w\A{gAxA}}
+\def\gAxB{\op{H}\w\A{gAxB}}
+\def\gAxC{\op{H}\w\A{gAxC}}
+\def\gAxD{\op{H}\w\A{gAxD}}
+\def\gAxE{\op{H}\w\A{gAxE}}
+\def\gBxA{\gnqubit{O_{f(x)}(x, a)}{ddddd}\w\A{gBxA}}
+\def\gBxB{\gspace{O_{f(x)}(x, a)}\w\A{gBxB}}
+\def\gBxC{\gspace{O_{f(x)}(x, a)}\w\A{gBxC}}
+\def\gBxD{\gspace{O_{f(x)}(x, a)}\w\A{gBxD}}
+\def\gBxE{\gspace{O_{f(x)}(x, a)}\w\A{gBxE}}
+\def\gBxF{\gspace{O_{f(x)}(x, a)}\w\A{gBxF}}
+
+% definitions for bit labels and initial states
+
+\def\bA{\qv{q_{0}}{0}}
+\def\bB{\qv{q_{1}}{0}}
+\def\bC{\qv{q_{2}}{0}}
+\def\bD{\qv{...}{0}}
+\def\bE{\qv{qn}{0}}
+\def\bF{\qv{a}{0}}
+
+% The quantum circuit as an xymatrix
+
+\xymatrix@R=5pt@C=10pt{
+    \bA & \gAxA &\gBxA &\n  
+\\  \bB & \gAxB &\gBxB &\n  
+\\  \bC & \gAxC &\gBxC &\n  
+\\  \bD & \gAxD &\gBxD &\n  
+\\  \bE & \gAxE &\gBxE &\n  
+\\  \bF & \n   &\gBxF &\n  
+%
+% Vertical lines and other post-xymatrix latex
+%
+}
+
+\end{document}
