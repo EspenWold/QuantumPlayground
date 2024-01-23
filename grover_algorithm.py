@@ -12,11 +12,13 @@ def stupid_all_ones_oracle(data_qubits):
     return oracle_gate
 
 
-def grover_algo(circuit, num_data_bits, ancilla_bit):
+def grover_algo(circuit, num_data_bits, ancilla_bit, num_iterations=None):
     data_qubits = [q for q in range(num_data_bits)]
     all_qubits = data_qubits + [ancilla_bit]
     num_qubits = len(all_qubits)
     grover_iterations = int(np.round((np.pi / 4) * np.sqrt(2 ** num_data_bits)))
+    if num_iterations:
+        grover_iterations = num_iterations
 
     # Construct gate for oracle
     oracle_gate = stupid_all_ones_oracle(data_qubits)
@@ -41,10 +43,8 @@ def grover_algo(circuit, num_data_bits, ancilla_bit):
     # Prepare ancilla qubit
     circuit.h(6)
     circuit.z(6)
-    circuit.barrier()
     for i in range(grover_iterations):
         circuit.append(grover_gate, all_qubits)
-        circuit.barrier()
 
     circuit.measure(data_qubits, data_qubits)
 
