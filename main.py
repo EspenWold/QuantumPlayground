@@ -1,66 +1,60 @@
-import time
+from qiskit import QuantumCircuit
+from qiskit.quantum_info import Pauli, SparsePauliOp
+from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import EstimatorV2 as Estimator
+from qiskit_ibm_runtime import EstimatorOptions
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit_aer.primitives import Estimator as SimEstimator
 import matplotlib.pyplot as plt
-from qiskit import QuantumCircuit, execute, QuantumRegister, ClassicalRegister, transpile
-from qiskit.providers.aer import AerSimulator
-from qiskit.visualization import plot_histogram
-from qiskit import IBMQ
-from qiskit.providers.jobstatus import JOB_FINAL_STATES
-from grover_algorithm import grover_algo
 
-# Only needs to run once with your IMB Quantum token to locally store your credentials
-# IBMQ.save_account(<INSERT_TOKEN>)
+def get_qc_for_n_qubit_GHZ_state(n):
+    qc = QuantumCircuit(n)
+    qc.h(0)
+    for i in range(n-1):
+        qc.cx(i, i+1)
+    return qc
 
-# This loads a simulated, idealised backend
-sim = AerSimulator()
-print(sim.configuration().to_dict())
 
-# This loads a real IMB quantum backend
-IBMQ.load_account()
-provider = IBMQ.get_provider(hub='ibm-q', group='open', project='main')
-real_backends = provider.backends(simulator=False, operational=True)
-real = provider.get_backend('ibm_oslo')
+n = 100
+qc = get_qc_for_n_qubit_GHZ_state(n)
+# qc.draw("mpl")
+# plt.show()
 
-print(real.configuration().to_dict())
+operator_strings = ['Z' + 'I' * i + 'Z' + 'I' * (n-2-i) for i in range(n-1)]
+operators = [SparsePauliOp(string) for string in operator_strings]
 
-q_reg = QuantumRegister(7, 'q')
-c_reg = ClassicalRegister(7, 'c')
-circuit = QuantumCircuit(q_reg, c_reg)
+# Get a real quantum backend and adapt circuit to said backend
+backend_name='ibm_brisbane'
+backend = QiskitRuntimeService().backend(backend_name)
+pass_manager = generate_preset_pass_manager(optimization_level=1, backend=backend)
+qc_transpiled = pass_manager.run(qc)
+operators_transpiled_list = [op.apply_layout(qc_transpiled.layout) for op in operators]
 
-num_data_bits = 3
-ancilla_bit_index = 6
+# Set up estimator for real backend
+options = EstimatorOptions()
+options.resilience_level = 1
+options.dynamical_decoupling.enable = True
+options.dynamical_decoupling.sequence_type = "XY4"
 
-grover_algo(circuit, num_data_bits, ancilla_bit_index, 1)
-
-idealised_circuit = transpile(circuit, sim, optimization_level=3)
-print("Idealised circuit depth", idealised_circuit.depth())
-idealised_circuit.draw('mpl')
-plt.show()
-
-adapted_circuit = transpile(circuit, real, optimization_level=3)
-print("Transpiled circuit depth", adapted_circuit.depth())
-print('Gate counts:', adapted_circuit.count_ops())
-if adapted_circuit.depth() < 200:
-    adapted_circuit.draw('mpl')
-plt.show()
-
-# Change to run on real/simulated machine
-simulation = True
-
-if simulation:
-    job = execute(idealised_circuit, sim)
-else:
-    job = execute(adapted_circuit, sim)
-start_time = time.time()
-job_status = job.status()
-while job_status not in JOB_FINAL_STATES:
-    print(f'Status @ {time.time()-start_time:0.0f} s: {job_status.name},'
-          f' est. queue position: {job.queue_position()}')
-    time.sleep(10)
-    job_status = job.status()
+# Choose simulator or real backend
+# estimator = SimEstimator()
+# job = estimator.run([qc] * len(operators), operators)
+estimator = Estimator(backend, options)
+job = estimator.run([(qc_transpiled, operators_transpiled_list)])
+job_id = job.job_id()
+print(job_id)
 
 result = job.result()
-counts = result.get_counts()
 
-plot_histogram(counts)
+data=operator_strings
+values=result.values
+plt.plot(data,values,'-0')
+plt.xlabel( 'Observables')
+plt.ylabel( 'Expectation value')
 plt.show()
-print("\nTotal counts are:", counts)
+
+# Return a drawing of the circuit using MatPlotLib ("mpl"). This is the
+# last line of the cell, so the drawing appears in the cell output.
+# Remove the "mpl" argument to get a text drawing.
+# qc.draw("mpl")
+# plt.show()

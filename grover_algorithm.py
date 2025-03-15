@@ -1,5 +1,5 @@
 import numpy as np
-from qiskit import QuantumCircuit, execute, QuantumRegister, ClassicalRegister
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library.standard_gates.x import MCXGate
 
 
